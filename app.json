@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "name": "book summaries",
+    "slug": "book-summaries",
+    "scheme": "booksummaries",
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
