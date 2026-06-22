@@ -4,6 +4,7 @@ import { Link, useRouter } from "expo-router";
 
 import { colors } from "../../constants/colors";
 import { useAuthSession } from "../../lib/auth-session";
+import { signInWithOAuth } from "../../lib/oauth";
 import { supabase } from "../../lib/supabase";
 
 export default function RegisterScreen() {
@@ -60,6 +61,14 @@ export default function RegisterScreen() {
     router.replace("/(tabs)");
   };
 
+  const handleSocialSignIn = async (provider: "google" | "apple") => {
+    try {
+      await signInWithOAuth(provider);
+    } catch (error) {
+      Alert.alert("Sign in failed", error instanceof Error ? error.message : "Unable to sign in.");
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Register screen</Text>
@@ -87,6 +96,8 @@ export default function RegisterScreen() {
         title={isSubmitting ? "Creating account..." : "Register"}
         onPress={handleRegister}
       />
+      <Button title="Continue with Google" onPress={() => handleSocialSignIn("google")} />
+      <Button title="Continue with Apple" onPress={() => handleSocialSignIn("apple")} />
       <Link href="/(auth)/login" style={styles.link}>
         Back to login
       </Link>

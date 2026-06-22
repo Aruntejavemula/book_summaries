@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { Linking } from "react-native";
 
 import { supabase } from "./supabase";
 
@@ -19,6 +20,16 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
+    const handleUrl = async (url: string) => {
+      const code = new URL(url).searchParams.get("code");
+
+      if (!code) {
+        return;
+      }
+
+      await supabase.auth.exchangeCodeForSession(code);
+    };
+
     const loadSession = async () => {
       const { data } = await supabase.auth.getSession();
 
@@ -32,14 +43,25 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
     loadSession();
 
+    void Linking.getInitialURL().then((url) => {
+      if (url) {
+        void handleUrl(url);
+      }
+    });
+
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       setIsLoading(false);
     });
 
+    const urlSubscription = Linking.addEventListener("url", ({ url }) => {
+      void handleUrl(url);
+    });
+
     return () => {
       isMounted = false;
       authListener.subscription.unsubscribe();
+      urlSubscription.remove();
     };
   }, []);
 
