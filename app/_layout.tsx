@@ -31,6 +31,7 @@ export default function RootLayout() {
   return (
     <AuthSessionProvider>
       <Stack screenOptions={{ headerTitleAlign: "center" }}>
+        <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="book/[id]" options={{ title: "Book details" }} />
