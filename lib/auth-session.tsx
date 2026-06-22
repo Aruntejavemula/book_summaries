@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { Linking } from "react-native";
 
+import { onAuthStateChange, signOut } from "./auth";
 import { supabase } from "./supabase";
 
 type AuthSessionContextValue = {
@@ -49,7 +50,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: authListener } = onAuthStateChange(async (_event, nextSession) => {
       setSession(nextSession);
       setIsLoading(false);
     });
@@ -70,7 +71,7 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       session,
       isLoading,
       signOut: async () => {
-        await supabase.auth.signOut();
+        await signOut();
       }
     }),
     [isLoading, session]

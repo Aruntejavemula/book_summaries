@@ -18,33 +18,38 @@ create policy "Users can update their own profile"
   with check (auth.uid() = id);
 
 drop policy if exists "Authenticated users can read books" on public.books;
-create policy "Authenticated users can read books"
+create policy "Books are viewable by everyone"
   on public.books
   for select
-  using (auth.role() = 'authenticated');
+  to anon, authenticated
+  using (true);
 
 drop policy if exists "Authenticated users can read summaries" on public.summaries;
-create policy "Authenticated users can read summaries"
+create policy "Summaries viewable by authenticated users"
   on public.summaries
   for select
-  using (auth.role() = 'authenticated');
+  to anon, authenticated
+  using (true);
 
 drop policy if exists "Users can read their subscription row" on public.subscriptions;
 create policy "Users can read their subscription row"
   on public.subscriptions
   for select
+  to authenticated
   using (auth.uid() = user_id);
 
 drop policy if exists "Users can insert their subscription row" on public.subscriptions;
 create policy "Users can insert their subscription row"
   on public.subscriptions
   for insert
+  to authenticated
   with check (auth.uid() = user_id);
 
 drop policy if exists "Users can update their subscription row" on public.subscriptions;
 create policy "Users can update their subscription row"
   on public.subscriptions
   for update
+  to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
@@ -52,18 +57,21 @@ drop policy if exists "Users can read their progress rows" on public.progress;
 create policy "Users can read their progress rows"
   on public.progress
   for select
+  to authenticated
   using (auth.uid() = user_id);
 
 drop policy if exists "Users can insert their progress rows" on public.progress;
 create policy "Users can insert their progress rows"
   on public.progress
   for insert
+  to authenticated
   with check (auth.uid() = user_id);
 
 drop policy if exists "Users can update their progress rows" on public.progress;
 create policy "Users can update their progress rows"
   on public.progress
   for update
+  to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
@@ -71,4 +79,5 @@ drop policy if exists "Users can delete their progress rows" on public.progress;
 create policy "Users can delete their progress rows"
   on public.progress
   for delete
+  to authenticated
   using (auth.uid() = user_id);
