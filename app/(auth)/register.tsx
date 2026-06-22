@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Button, StyleSheet, Text, TextInput, View } from "react-native";
 import { Link, useRouter } from "expo-router";
 
 import { colors } from "../../constants/colors";
+import { useAuthSession } from "../../lib/auth-session";
 import { supabase } from "../../lib/supabase";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { isLoading, session } = useAuthSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isLoading && session) {
+      router.replace("/(tabs)");
+    }
+  }, [isLoading, router, session]);
 
   const validate = () => {
     if (!email.trim() || !password.trim()) {
@@ -37,7 +45,10 @@ export default function RegisterScreen() {
 
     setIsSubmitting(true);
 
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({
+      email,
+      password
+    });
 
     setIsSubmitting(false);
 
