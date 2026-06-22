@@ -14,9 +14,9 @@ export class AudioUrlError extends Error {
   }
 }
 
-export async function getAudioUrl(summary_id: string): Promise<string> {
+export async function getAudioUrl(chapter_id: string): Promise<string> {
   const { data, error } = await supabase.functions.invoke("get-audio-url", {
-    body: { summary_id }
+    body: { chapter_id }
   });
 
   if (error) {

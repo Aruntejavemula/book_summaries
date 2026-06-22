@@ -9,9 +9,8 @@ type AuthContext = {
 type JsonRecord = Record<string, unknown>;
 
 type QueryBuilder = {
-  select(columns: string, options?: { count?: "exact"; head?: boolean }): QueryBuilder;
+  select(columns: string): QueryBuilder;
   eq(column: string, value: string | boolean): QueryBuilder;
-  gt(column: string, value: string): QueryBuilder;
   limit(count: number): QueryBuilder;
 };
 
@@ -85,7 +84,7 @@ function encodeRfc3986(value: string) {
 
 function formatAmzDate(date: Date) {
   const iso = date.toISOString().replace(/[:-]|\.\d{3}/g, "");
-  return iso.slice(0, 15) + "Z";
+  return `${iso.slice(0, 15)}Z`;
 }
 
 async function sha256Hex(input: string) {
@@ -228,54 +227,40 @@ async function getAuthContext(request: Request): Promise<AuthContext | Response>
   };
 }
 
-async function hasActiveSubscription(
-  supabase: SupabaseLike,
-  userId: string
-) {
-  const query = supabase
+async function hasActiveSubscription(supabase: SupabaseLike, userId: string) {
+  const { data, error } = await (supabase
     .from("subscriptions")
     .select("id,expires_at,current_period_ends_at")
     .eq("user_id", userId)
     .eq("status", "active")
-    .limit(1);
-
-  const { data, error } = await (query as unknown as Promise<{
-    data: {
-      expires_at: string | null;
-      current_period_ends_at: string | null;
-    }[] | null;
-    error: { message: string } | null;
-  }>);
+    .limit(1) as unknown as Promise<{
+      data: { expires_at: string | null; current_period_ends_at: string | null }[] | null;
+      error: { message: string } | null;
+    }>);
 
   if (error) {
     throw error;
   }
 
   const row = data?.[0];
-
   if (!row) {
     return false;
   }
 
   const expiry = row.expires_at ?? row.current_period_ends_at;
-
   return expiry ? new Date(expiry) > new Date() : false;
 }
 
-async function countCompletedProgress(
-  supabase: SupabaseLike,
-  userId: string
-) {
-  const query = supabase
+async function countCompletedChapters(supabase: SupabaseLike, userId: string) {
+  const { data, error } = await (supabase
     .from("progress")
     .select("id")
     .eq("user_id", userId)
-    .eq("is_completed", true);
-
-  const { data, error } = await (query as unknown as Promise<{
-    data: { id: string }[] | null;
-    error: { message: string } | null;
-  }>);
+    .eq("is_completed", true)
+    .limit(1000) as unknown as Promise<{
+      data: { id: string }[] | null;
+      error: { message: string } | null;
+    }>);
 
   if (error) {
     throw error;
@@ -284,28 +269,21 @@ async function countCompletedProgress(
   return data?.length ?? 0;
 }
 
-async function getAudioPath(
-  supabase: SupabaseLike,
-  summaryId: string
-) {
-  const query = supabase
-    .from("summaries")
-    .select("audio_path,audio_object_key")
-    .eq("id", summaryId)
-    .limit(1);
-
-  const { data, error } = await (query as unknown as Promise<{
-    data: { audio_path: string | null; audio_object_key: string | null }[] | null;
-    error: { message: string } | null;
-  }>);
+async function getAudioPath(supabase: SupabaseLike, chapterId: string) {
+  const { data, error } = await (supabase
+    .from("chapters")
+    .select("audio_path")
+    .eq("id", chapterId)
+    .limit(1) as unknown as Promise<{
+      data: { audio_path: string | null }[] | null;
+      error: { message: string } | null;
+    }>);
 
   if (error) {
     throw error;
   }
 
-  const row = data?.[0];
-
-  return row?.audio_path ?? row?.audio_object_key ?? null;
+  return data?.[0]?.audio_path ?? null;
 }
 
 Deno.serve(async (request) => {
@@ -330,7 +308,7 @@ Deno.serve(async (request) => {
     }
   }) as unknown as SupabaseLike;
 
-  let payload: { summary_id?: string };
+  let payload: { chapter_id?: string };
 
   try {
     payload = await request.json();
@@ -338,20 +316,20 @@ Deno.serve(async (request) => {
     return badRequest();
   }
 
-  const summaryId = payload.summary_id?.trim();
-  if (!summaryId) {
-    return badRequest("missing_summary_id");
+  const chapterId = payload.chapter_id?.trim();
+  if (!chapterId) {
+    return badRequest("missing_chapter_id");
   }
 
   try {
     const [isSubscribed, completedCount, audioPath] = await Promise.all([
       hasActiveSubscription(supabase, userId),
-      countCompletedProgress(supabase, userId),
-      getAudioPath(supabase, summaryId)
+      countCompletedChapters(supabase, userId),
+      getAudioPath(supabase, chapterId)
     ]);
 
     if (!audioPath) {
-      return notFound("summary_not_found");
+      return notFound("chapter_not_found");
     }
 
     if (!isSubscribed && completedCount >= 3) {
