@@ -16,7 +16,7 @@ export default function RegisterScreen() {
 
   useEffect(() => {
     if (!isLoading && session) {
-      router.replace("/(tabs)/index");
+      router.replace("/(tabs)");
     }
   }, [isLoading, router, session]);
 
