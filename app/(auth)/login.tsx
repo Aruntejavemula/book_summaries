@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import {
+  Dimensions,
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,6 +14,9 @@ import { Link, useRouter } from "expo-router";
 
 import { useAuthSession } from "../../lib/auth-session";
 import { supabase } from "../../lib/supabase";
+
+const { width: screenWidth } = Dimensions.get("window");
+const isWideScreen = screenWidth >= 768;
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -46,78 +51,142 @@ export default function LoginScreen() {
     router.replace("/(tabs)");
   };
 
+  const handleGoogleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google"
+    });
+    if (error) {
+      setErrorMessage(error.message);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "apple"
+    });
+    if (error) {
+      setErrorMessage(error.message);
+    }
+  };
+
+  const formContent = (
+    <View style={styles.formPanel}>
+      <View style={styles.formInner}>
+        <Text style={styles.logo}>Book Summaries</Text>
+
+        <Text style={styles.heading}>Sign into your account</Text>
+        <Text style={styles.subheading}>
+          Your Telugu book summaries and audio chapters await.
+        </Text>
+
+        <Text style={styles.label}>
+          Email address <Text style={styles.required}>*</Text>
+        </Text>
+        <TextInput
+          autoCapitalize="none"
+          autoComplete="email"
+          keyboardType="email-address"
+          onChangeText={setEmail}
+          placeholder="you@example.com"
+          placeholderTextColor="#a8a29e"
+          style={styles.input}
+          value={email}
+        />
+
+        <Text style={styles.label}>
+          Password <Text style={styles.required}>*</Text>
+        </Text>
+        <TextInput
+          autoCapitalize="none"
+          autoComplete="password"
+          onChangeText={setPassword}
+          placeholder="Enter your password"
+          placeholderTextColor="#a8a29e"
+          secureTextEntry
+          style={styles.input}
+          value={password}
+        />
+
+        <Pressable style={styles.forgotLink}>
+          <Text style={styles.forgotText}>Forgot password?</Text>
+        </Pressable>
+
+        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+
+        <Pressable
+          accessibilityRole="button"
+          disabled={isSubmitting}
+          onPress={handleLogin}
+          style={({ pressed }) => [
+            styles.primaryButton,
+            (pressed || isSubmitting) && styles.primaryButtonPressed
+          ]}
+        >
+          <Text style={styles.primaryButtonText}>
+            {isSubmitting ? "Signing in..." : "Sign in"}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={handleGoogleSignIn}
+          style={({ pressed }) => [
+            styles.oauthButton,
+            pressed && styles.oauthButtonPressed
+          ]}
+        >
+          <Text style={styles.googleIcon}>G</Text>
+          <Text style={styles.oauthButtonText}>Sign in with Google</Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          onPress={handleAppleSignIn}
+          style={({ pressed }) => [
+            styles.oauthButton,
+            pressed && styles.oauthButtonPressed
+          ]}
+        >
+          <Text style={styles.appleIcon}>&#xF8FF;</Text>
+          <Text style={styles.oauthButtonText}>Sign in with Apple</Text>
+        </Pressable>
+
+        <View style={styles.footerRow}>
+          <Text style={styles.footerText}>Don&apos;t have an account?</Text>
+          <Link href="/(auth)/register" style={styles.footerLink}>
+            Sign up
+          </Link>
+        </View>
+      </View>
+    </View>
+  );
+
+  const artPanel = (
+    <View style={isWideScreen ? styles.artPanelWide : styles.artPanelMobile}>
+      <Image
+        source={require("../../assets/login-art.png")}
+        style={styles.artImage}
+        resizeMode="cover"
+      />
+    </View>
+  );
+
+  if (isWideScreen) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.splitContainer}>
+          {formContent}
+          {artPanel}
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container} bounces={false}>
-        <View style={styles.phoneFrame}>
-          <View style={styles.topGlow} />
-          <View style={styles.sideGlow} />
-
-          <View style={styles.brandPill}>
-            <Text style={styles.brandText}>BOOK SUMMARIES</Text>
-          </View>
-
-          <View style={styles.heroCard}>
-            <View style={styles.bookStack}>
-              <View style={[styles.book, styles.bookOne]} />
-              <View style={[styles.book, styles.bookTwo]} />
-              <View style={[styles.book, styles.bookThree]} />
-            </View>
-            <Text style={styles.title}>Pick up your next chapter.</Text>
-            <Text style={styles.subtitle}>
-              Sign in to continue Telugu summaries, audio chapters, and your saved progress.
-            </Text>
-          </View>
-
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Welcome back</Text>
-            <Text style={styles.formSubtitle}>Log in with your Book Summaries account.</Text>
-
-            <TextInput
-              autoCapitalize="none"
-              autoComplete="email"
-              keyboardType="email-address"
-              onChangeText={setEmail}
-              placeholder="Email address"
-              placeholderTextColor="#a48363"
-              style={styles.input}
-              value={email}
-            />
-            <TextInput
-              autoCapitalize="none"
-              autoComplete="password"
-              onChangeText={setPassword}
-              placeholder="Password"
-              placeholderTextColor="#a48363"
-              secureTextEntry
-              style={styles.input}
-              value={password}
-            />
-
-            {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-
-            <Pressable
-              accessibilityRole="button"
-              disabled={isSubmitting}
-              onPress={handleLogin}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                (pressed || isSubmitting) && styles.primaryButtonPressed
-              ]}
-            >
-              <Text style={styles.primaryButtonText}>
-                {isSubmitting ? "Signing you in…" : "Sign In"}
-              </Text>
-            </Pressable>
-
-            <View style={styles.helperRow}>
-              <Text style={styles.helperText}>Need an account?</Text>
-              <Link href="/(auth)/register" style={styles.link}>
-                Create account
-              </Link>
-            </View>
-          </View>
-        </View>
+      <ScrollView contentContainerStyle={styles.mobileContainer} bounces={false}>
+        {artPanel}
+        {formContent}
       </ScrollView>
     </SafeAreaView>
   );
@@ -126,173 +195,151 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#f6f0e4"
+    backgroundColor: "#FAF9F6"
   },
-  container: {
-    flexGrow: 1,
-    alignItems: "center",
-    backgroundColor: "#f6f0e4",
-    paddingHorizontal: 14,
-    paddingVertical: 18
+  splitContainer: {
+    flex: 1,
+    flexDirection: "row"
   },
-  phoneFrame: {
-    backgroundColor: "#f2eadc",
-    borderColor: "#e4d4bb",
-    borderRadius: 34,
-    borderWidth: 1,
-    overflow: "hidden",
-    padding: 12,
-    shadowColor: "#d4c3a5",
-    shadowOpacity: 0.2,
-    shadowRadius: 22,
-    shadowOffset: {
-      width: 0,
-      height: 16
-    },
-    width: "100%",
-    maxWidth: 390
+  mobileContainer: {
+    flexGrow: 1
   },
-  topGlow: {
-    position: "absolute",
-    top: -40,
-    left: -30,
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    backgroundColor: "rgba(233, 219, 196, 0.85)"
+  formPanel: {
+    flex: 1,
+    backgroundColor: "#FAF9F6",
+    justifyContent: "center",
+    paddingHorizontal: 40,
+    paddingVertical: 32
   },
-  sideGlow: {
-    position: "absolute",
-    right: -35,
-    top: 180,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "rgba(228, 214, 190, 0.8)"
+  formInner: {
+    maxWidth: 400,
+    width: "100%"
   },
-  brandPill: {
-    alignSelf: "flex-start",
-    backgroundColor: "#eadcc8",
-    borderColor: "#dcc9ac",
-    borderRadius: 999,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8
+  logo: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#44403c",
+    marginBottom: 36,
+    letterSpacing: 0.5
   },
-  brandText: {
-    color: "#5a432f",
-    fontSize: 11,
-    fontWeight: "900",
-    letterSpacing: 1.2
-  },
-  heroCard: {
-    backgroundColor: "#f1e5d5",
-    borderColor: "#dfccb2",
-    borderRadius: 28,
-    borderWidth: 1,
-    marginTop: 12,
-    padding: 12
-  },
-  bookStack: {
-    flexDirection: "row",
-    gap: 10,
+  heading: {
+    fontSize: 28,
+    fontWeight: "800",
+    color: "#1c1917",
     marginBottom: 8
   },
-  book: {
-    borderRadius: 18,
-    height: 60,
-    width: 36
+  subheading: {
+    fontSize: 15,
+    color: "#78716c",
+    marginBottom: 28,
+    lineHeight: 22
   },
-  bookOne: {
-    backgroundColor: "#d7b08a",
-    transform: [{ rotate: "-6deg" }]
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#44403c",
+    marginBottom: 6
   },
-  bookTwo: {
-    backgroundColor: "#c89d72",
-    transform: [{ rotate: "3deg" }]
-  },
-  bookThree: {
-    backgroundColor: "#e1c29c",
-    transform: [{ rotate: "-2deg" }]
-  },
-  title: {
-    color: "#4e3928",
-    fontSize: 26,
-    fontWeight: "900",
-    lineHeight: 28,
-    maxWidth: 290
-  },
-  subtitle: {
-    color: "#7a624a",
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 8
-  },
-  formCard: {
-    backgroundColor: "#f5ebdd",
-    borderColor: "#e2d1b7",
-    borderRadius: 28,
-    borderWidth: 1,
-    marginTop: 10,
-    padding: 12
-  },
-  formTitle: {
-    color: "#4e3928",
-    fontSize: 19,
-    fontWeight: "900"
-  },
-  formSubtitle: {
-    color: "#7a624a",
-    fontSize: 12,
-    marginTop: 3,
-    marginBottom: 10
+  required: {
+    color: "#dc2626"
   },
   input: {
-    backgroundColor: "#f7efe2",
-    borderColor: "#e1cdb2",
-    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderColor: "#e7e5e4",
+    borderRadius: 10,
     borderWidth: 1,
-    color: "#5a432f",
+    color: "#1c1917",
     fontSize: 16,
-    marginBottom: 8,
+    marginBottom: 16,
     paddingHorizontal: 14,
-    paddingVertical: 10
+    paddingVertical: 12
+  },
+  forgotLink: {
+    alignSelf: "flex-start",
+    marginBottom: 20
+  },
+  forgotText: {
+    color: "#16a34a",
+    fontSize: 14,
+    fontWeight: "600"
   },
   error: {
-    color: "#9a5b45",
+    color: "#dc2626",
     fontSize: 14,
     marginBottom: 12
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#c78a5d",
-    borderRadius: 16,
-    marginTop: 0,
-    paddingVertical: 11
+    backgroundColor: "#1c1917",
+    borderRadius: 10,
+    paddingVertical: 14,
+    marginBottom: 12
   },
   primaryButtonPressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.99 }]
+    opacity: 0.85
   },
   primaryButtonText: {
-    color: "#fff5ea",
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "900"
+    fontWeight: "700"
   },
-  helperRow: {
+  oauthButton: {
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderColor: "#e7e5e4",
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    paddingVertical: 12,
+    marginBottom: 10
+  },
+  oauthButtonPressed: {
+    backgroundColor: "#f5f5f4"
+  },
+  oauthButtonText: {
+    color: "#1c1917",
+    fontSize: 15,
+    fontWeight: "600"
+  },
+  googleIcon: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#4285F4",
+    marginRight: 10
+  },
+  appleIcon: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1c1917",
+    marginRight: 10
+  },
+  footerRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: 6,
-    justifyContent: "center",
-    marginTop: 10
+    marginTop: 20
   },
-  helperText: {
-    color: "#7a624a",
+  footerText: {
+    color: "#78716c",
     fontSize: 14
   },
-  link: {
-    color: "#9a6f49",
+  footerLink: {
+    color: "#16a34a",
     fontSize: 14,
-    fontWeight: "900"
+    fontWeight: "700"
+  },
+  artPanelWide: {
+    flex: 1,
+    overflow: "hidden"
+  },
+  artPanelMobile: {
+    width: "100%",
+    height: 220,
+    overflow: "hidden"
+  },
+  artImage: {
+    width: "100%",
+    height: "100%"
   }
 });

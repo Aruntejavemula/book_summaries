@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     marginTop: 12
   },
   libraryCaption: {
-    color: colors.muted,
+    color: colors.textMuted,
     fontSize: 18,
     textAlign: "center"
   },
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
     marginTop: 26
   },
   progressText: {
-    color: colors.muted,
+    color: colors.textMuted,
     fontSize: 18,
     marginTop: 8
   },
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
     marginTop: 18
   },
   ctaCardText: {
-    color: colors.muted,
+    color: colors.textMuted,
     fontSize: 18,
     marginTop: 6
   },
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
     marginTop: 28
   },
   subtitle: {
-    color: colors.muted,
+    color: colors.textMuted,
     fontSize: 20,
     lineHeight: 28,
     marginTop: 12,
