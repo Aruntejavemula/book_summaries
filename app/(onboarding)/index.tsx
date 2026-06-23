@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
-  Dimensions,
   Image,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 
@@ -19,39 +20,99 @@ import {
   setOnboardingCompleted,
 } from "../../lib/onboarding";
 
-/* ---------- art assets ---------- */
-const goalsArt = require("../../assets/onboarding-goals.png") as number;
-const categoriesArt = require("../../assets/onboarding-categories.png") as number;
-const discoveryArt = require("../../assets/onboarding-discovery.png") as number;
-const subscriptionArt = require("../../assets/onboarding-subscription.png") as number;
-
-const ART_BY_STEP: Record<number, number> = {
-  0: goalsArt,
-  1: categoriesArt,
-  2: discoveryArt,
-  4: subscriptionArt,
-};
+/* ---------- art asset (same as login, approved by user) ---------- */
+const artImage = require("../../assets/login-art.png") as number;
 
 /* ---------- data ---------- */
 
 const GOALS = [
-  { id: "habits", label: "Build better habits", icon: "\u2728" },
-  { id: "career", label: "Boost my career", icon: "\uD83D\uDE80" },
-  { id: "grow", label: "Grow as a person", icon: "\uD83C\uDF31" },
-  { id: "ideas", label: "Get inspired by new ideas", icon: "\uD83D\uDCA1" },
-  { id: "world", label: "Understand the world", icon: "\uD83C\uDF0D" },
-  { id: "learn", label: "Learn something new daily", icon: "\uD83D\uDCDA" },
+  {
+    id: "habits",
+    icon: "\u2728",
+    label: "Build better habits",
+    subtitle: "Daily routines that stick",
+  },
+  {
+    id: "career",
+    icon: "\uD83D\uDE80",
+    label: "Boost my career",
+    subtitle: "Skills & strategies for growth",
+  },
+  {
+    id: "grow",
+    icon: "\uD83C\uDF31",
+    label: "Grow as a person",
+    subtitle: "Self-awareness & mindset",
+  },
+  {
+    id: "ideas",
+    icon: "\uD83D\uDCA1",
+    label: "Get inspired by new ideas",
+    subtitle: "Creativity & innovation",
+  },
+  {
+    id: "world",
+    icon: "\uD83C\uDF0D",
+    label: "Understand the world",
+    subtitle: "History, science & culture",
+  },
+  {
+    id: "learn",
+    icon: "\uD83D\uDCDA",
+    label: "Learn something new daily",
+    subtitle: "Bite-sized knowledge every day",
+  },
 ];
 
 const CATEGORIES = [
-  { id: "motivation", label: "Motivation & Inspiration", icon: "\uD83D\uDD25" },
-  { id: "business", label: "Business & Career", icon: "\uD83D\uDCBC" },
-  { id: "personal", label: "Personal Development", icon: "\uD83C\uDFAF" },
-  { id: "health", label: "Health & Wellness", icon: "\uD83E\uDDD8" },
-  { id: "money", label: "Money & Finance", icon: "\uD83D\uDCB0" },
-  { id: "science", label: "Science & Technology", icon: "\uD83D\uDD2C" },
-  { id: "productivity", label: "Productivity", icon: "\u26A1" },
-  { id: "communication", label: "Communication Skills", icon: "\uD83D\uDDE3\uFE0F" },
+  {
+    id: "motivation",
+    icon: "\uD83D\uDD25",
+    label: "Motivation & Inspiration",
+    subtitle: "Stay driven & focused",
+  },
+  {
+    id: "business",
+    icon: "\uD83D\uDCBC",
+    label: "Business & Career",
+    subtitle: "Leadership & strategy",
+  },
+  {
+    id: "personal",
+    icon: "\uD83C\uDFAF",
+    label: "Personal Development",
+    subtitle: "Become your best self",
+  },
+  {
+    id: "health",
+    icon: "\uD83E\uDDD8",
+    label: "Health & Wellness",
+    subtitle: "Mind, body & nutrition",
+  },
+  {
+    id: "money",
+    icon: "\uD83D\uDCB0",
+    label: "Money & Finance",
+    subtitle: "Investing & financial freedom",
+  },
+  {
+    id: "science",
+    icon: "\uD83D\uDD2C",
+    label: "Science & Technology",
+    subtitle: "How the world works",
+  },
+  {
+    id: "productivity",
+    icon: "\u26A1",
+    label: "Productivity",
+    subtitle: "Get more done, better",
+  },
+  {
+    id: "communication",
+    icon: "\uD83D\uDDE3\uFE0F",
+    label: "Communication Skills",
+    subtitle: "Influence & persuasion",
+  },
 ];
 
 interface SampleBook {
@@ -100,15 +161,13 @@ const PREPARING_STEPS = [
   "Creating collections you might like",
 ];
 
-/* ---------- constants ---------- */
-
-const TOTAL_STEPS = 4;
+const TOTAL_VISIBLE_STEPS = 4;
 const WIDE_BREAKPOINT = 768;
 
 /* ---------- sub-components ---------- */
 
 function ProgressBar({ step }: { step: number }) {
-  const progress = Math.min(((step + 1) / TOTAL_STEPS) * 100, 100);
+  const progress = Math.min(((step + 1) / TOTAL_VISIBLE_STEPS) * 100, 100);
   const widthAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -121,11 +180,11 @@ function ProgressBar({ step }: { step: number }) {
   }, [progress, widthAnim]);
 
   return (
-    <View style={styles.progressBarContainer}>
-      <View style={styles.progressBarTrack}>
+    <View style={s.progressContainer}>
+      <View style={s.progressTrack}>
         <Animated.View
           style={[
-            styles.progressBarFill,
+            s.progressFill,
             {
               width: widthAnim.interpolate({
                 inputRange: [0, 100],
@@ -135,10 +194,46 @@ function ProgressBar({ step }: { step: number }) {
           ]}
         />
       </View>
-      <Text style={styles.progressBarLabel}>
-        Step {Math.min(step + 1, TOTAL_STEPS)} of {TOTAL_STEPS}
+      <Text style={s.progressLabel}>
+        Step {Math.min(step + 1, TOTAL_VISIBLE_STEPS)} of {TOTAL_VISIBLE_STEPS}
       </Text>
     </View>
+  );
+}
+
+function OptionCard({
+  icon,
+  label,
+  subtitle,
+  selected,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  subtitle: string;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={[s.optionCard, selected && s.optionCardSelected]}
+      onPress={onPress}
+    >
+      <View style={[s.optionIconCircle, selected && s.optionIconCircleSelected]}>
+        <Text style={s.optionIconText}>{icon}</Text>
+      </View>
+      <View style={s.optionTextCol}>
+        <Text style={[s.optionTitle, selected && s.optionTitleSelected]}>
+          {label}
+        </Text>
+        <Text style={s.optionSubtitle}>{subtitle}</Text>
+      </View>
+      {selected ? (
+        <Text style={s.optionCheck}>{"\u2713"}</Text>
+      ) : (
+        <Text style={s.optionArrow}>{"\u2192"}</Text>
+      )}
+    </Pressable>
   );
 }
 
@@ -150,35 +245,24 @@ function GoalsStep({
   onToggle: (id: string) => void;
 }) {
   return (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>
+    <View style={s.stepBody}>
+      <Text style={s.stepHeading}>
         What are your biggest goals right now?
       </Text>
-      <Text style={styles.stepSubtitle}>
+      <Text style={s.stepSubheading}>
         You can always update your answers later.
       </Text>
-      <View style={styles.optionsList}>
-        {GOALS.map((goal) => {
-          const isSelected = selected.includes(goal.id);
-          return (
-            <Pressable
-              key={goal.id}
-              style={[styles.optionCard, isSelected && styles.optionCardSelected]}
-              onPress={() => onToggle(goal.id)}
-            >
-              <Text style={styles.optionIcon}>{goal.icon}</Text>
-              <Text
-                style={[
-                  styles.optionLabel,
-                  isSelected && styles.optionLabelSelected,
-                ]}
-              >
-                {goal.label}
-              </Text>
-              {isSelected && <Text style={styles.checkmark}>{"\u2713"}</Text>}
-            </Pressable>
-          );
-        })}
+      <View style={s.optionsList}>
+        {GOALS.map((g) => (
+          <OptionCard
+            key={g.id}
+            icon={g.icon}
+            label={g.label}
+            subtitle={g.subtitle}
+            selected={selected.includes(g.id)}
+            onPress={() => onToggle(g.id)}
+          />
+        ))}
       </View>
     </View>
   );
@@ -192,35 +276,24 @@ function CategoriesStep({
   onToggle: (id: string) => void;
 }) {
   return (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>
+    <View style={s.stepBody}>
+      <Text style={s.stepHeading}>
         Follow categories you&apos;re interested in
       </Text>
-      <Text style={styles.stepSubtitle}>
+      <Text style={s.stepSubheading}>
         We&apos;ll recommend books from these genres.
       </Text>
-      <View style={styles.optionsList}>
-        {CATEGORIES.map((cat) => {
-          const isSelected = selected.includes(cat.id);
-          return (
-            <Pressable
-              key={cat.id}
-              style={[styles.optionCard, isSelected && styles.optionCardSelected]}
-              onPress={() => onToggle(cat.id)}
-            >
-              <Text style={styles.optionIcon}>{cat.icon}</Text>
-              <Text
-                style={[
-                  styles.optionLabel,
-                  isSelected && styles.optionLabelSelected,
-                ]}
-              >
-                {cat.label}
-              </Text>
-              {isSelected && <Text style={styles.checkmark}>{"\u2713"}</Text>}
-            </Pressable>
-          );
-        })}
+      <View style={s.optionsList}>
+        {CATEGORIES.map((c) => (
+          <OptionCard
+            key={c.id}
+            icon={c.icon}
+            label={c.label}
+            subtitle={c.subtitle}
+            selected={selected.includes(c.id)}
+            onPress={() => onToggle(c.id)}
+          />
+        ))}
       </View>
     </View>
   );
@@ -263,45 +336,42 @@ function BookPicksStep({
   if (!book) return null;
 
   return (
-    <View style={styles.stepContent}>
-      <Text style={styles.stepTitle}>Does this title look interesting?</Text>
-      <Text style={styles.stepSubtitle}>
+    <View style={s.stepBody}>
+      <Text style={s.stepHeading}>Does this title look interesting?</Text>
+      <Text style={s.stepSubheading}>
         Titles you like will be saved to your library.
       </Text>
       <Animated.View
         style={[
-          styles.bookCard,
+          s.bookCard,
           {
-            transform: [
-              { translateY: cardAnim },
-              { scale: scaleAnim },
-            ],
+            transform: [{ translateY: cardAnim }, { scale: scaleAnim }],
           },
         ]}
       >
         <Image
           source={{ uri: book.coverUrl }}
-          style={styles.bookCover}
+          style={s.bookCover}
           resizeMode="cover"
         />
-        <Text style={styles.bookTitle}>{book.title}</Text>
-        <Text style={styles.bookAuthor}>{book.author}</Text>
-        <View style={styles.bookCategoryBadge}>
-          <Text style={styles.bookCategoryText}>{book.category}</Text>
+        <Text style={s.bookTitle}>{book.title}</Text>
+        <Text style={s.bookAuthor}>{book.author}</Text>
+        <View style={s.bookBadge}>
+          <Text style={s.bookBadgeText}>{book.category}</Text>
         </View>
       </Animated.View>
-      <View style={styles.voteRow}>
-        <Pressable style={styles.voteBtn} onPress={onDislike}>
-          <Text style={styles.voteBtnText}>{"\uD83D\uDC4E"}</Text>
+      <View style={s.voteRow}>
+        <Pressable style={s.voteBtn} onPress={onDislike}>
+          <Text style={s.voteBtnEmoji}>{"\uD83D\uDC4E"}</Text>
         </Pressable>
-        <Pressable style={styles.skipBtn} onPress={onSkip}>
-          <Text style={styles.skipBtnText}>Skip</Text>
+        <Pressable style={s.skipLink} onPress={onSkip}>
+          <Text style={s.skipLinkText}>Skip</Text>
         </Pressable>
-        <Pressable style={[styles.voteBtn, styles.voteBtnLike]} onPress={onLike}>
-          <Text style={styles.voteBtnText}>{"\uD83D\uDC4D"}</Text>
+        <Pressable style={[s.voteBtn, s.voteBtnLike]} onPress={onLike}>
+          <Text style={s.voteBtnEmoji}>{"\uD83D\uDC4D"}</Text>
         </Pressable>
       </View>
-      <Text style={styles.bookCounter}>
+      <Text style={s.bookCounter}>
         {currentIndex + 1} of {SAMPLE_BOOKS.length}
       </Text>
     </View>
@@ -311,7 +381,6 @@ function BookPicksStep({
 function PreparingStep({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = useState(0);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const ringAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     let current = 0;
@@ -335,48 +404,55 @@ function PreparingStep({ onDone }: { onDone: () => void }) {
       }
     }, 60);
 
-    Animated.loop(
-      Animated.timing(ringAnim, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: true,
-      })
-    ).start();
-
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const spin = ringAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
-
   return (
-    <View style={styles.preparingContainer}>
-      <View style={styles.progressRingOuter}>
-        <Animated.View
-          style={[
-            styles.progressRingSpinner,
-            { transform: [{ rotate: spin }] },
-          ]}
-        />
-        <Text style={styles.progressRingText}>{progress}%</Text>
+    <View style={s.stepBody}>
+      <Text style={s.stepHeading}>Setting things up...</Text>
+      <Text style={s.stepSubheading}>
+        We&apos;re preparing your personalized reading experience.
+      </Text>
+
+      <View style={s.preparingBarContainer}>
+        <View style={s.preparingBarTrack}>
+          <View style={[s.preparingBarFill, { width: `${progress}%` }]} />
+        </View>
       </View>
-      <Text style={styles.preparingTitle}>Preparing your content</Text>
-      <View style={styles.preparingChecklist}>
+
+      <View style={s.preparingChecklist}>
         {PREPARING_STEPS.map((label, i) => {
           const done = completedSteps.includes(i);
+          const active =
+            !done &&
+            (i === 0 || completedSteps.includes(i - 1));
           return (
-            <Animated.View
-              key={label}
-              style={[styles.preparingItem, { opacity: done ? 1 : 0.4 }]}
-            >
-              <Text style={styles.preparingCheck}>
-                {done ? "\u2705" : "\u23F3"}
+            <View key={label} style={s.preparingItem}>
+              <View
+                style={[
+                  s.preparingDot,
+                  done && s.preparingDotDone,
+                  active && s.preparingDotActive,
+                ]}
+              >
+                {done && <Text style={s.preparingDotCheck}>{"\u2713"}</Text>}
+              </View>
+              {i < PREPARING_STEPS.length - 1 && (
+                <View
+                  style={[s.preparingLine, done && s.preparingLineDone]}
+                />
+              )}
+              <Text
+                style={[
+                  s.preparingLabel,
+                  done && s.preparingLabelDone,
+                  active && s.preparingLabelActive,
+                ]}
+              >
+                {label}
               </Text>
-              <Text style={styles.preparingLabel}>{label}</Text>
-            </Animated.View>
+            </View>
           );
         })}
       </View>
@@ -396,72 +472,66 @@ function SubscriptionStep({
   onSkip: () => void;
 }) {
   return (
-    <View style={styles.stepContent}>
-      <Text style={styles.subscriptionHeading}>Read without limits</Text>
-      <View style={styles.ratingRow}>
-        <Text style={styles.stars}>{"\u2B50\u2B50\u2B50\u2B50\u2B50"}</Text>
-        <Text style={styles.ratingText}>4.7 stars from 50,000+ readers</Text>
+    <View style={s.stepBody}>
+      <Text style={s.stepHeading}>Read without limits</Text>
+      <View style={s.ratingRow}>
+        <Text style={s.stars}>{"\u2B50\u2B50\u2B50\u2B50\u2B50"}</Text>
+        <Text style={s.ratingText}>4.7 stars from 50,000+ readers</Text>
       </View>
 
-      <View style={styles.featureList}>
+      <View style={s.featureList}>
         {[
           "Unlimited Telugu book summaries",
           "Audio playback for every summary",
           "New titles added weekly",
           "Download for offline reading",
-        ].map((feature) => (
-          <View key={feature} style={styles.featureItem}>
-            <Text style={styles.featureCheck}>{"\u2713"}</Text>
-            <Text style={styles.featureText}>{feature}</Text>
+        ].map((f) => (
+          <View key={f} style={s.featureItem}>
+            <Text style={s.featureCheck}>{"\u2713"}</Text>
+            <Text style={s.featureText}>{f}</Text>
           </View>
         ))}
       </View>
 
       <Pressable
-        style={[
-          styles.planCard,
-          selectedPlan === "annual" && styles.planCardSelected,
-        ]}
+        style={[s.planCard, selectedPlan === "annual" && s.planCardSelected]}
         onPress={() => onSelectPlan("annual")}
       >
-        <View style={styles.planBadge}>
-          <Text style={styles.planBadgeText}>OUR BEST VALUE</Text>
+        <View style={s.planBadge}>
+          <Text style={s.planBadgeText}>OUR BEST VALUE</Text>
         </View>
-        <View style={styles.planRow}>
+        <View style={s.planRow}>
           <View>
-            <Text style={styles.planName}>Annual</Text>
-            <Text style={styles.planDetail}>7 days free, then billed yearly</Text>
+            <Text style={s.planName}>Annual</Text>
+            <Text style={s.planDetail}>7 days free, then billed yearly</Text>
           </View>
-          <Text style={styles.planPrice}>$2.49/week</Text>
+          <Text style={s.planPrice}>$2.49/week</Text>
         </View>
       </Pressable>
 
       <Pressable
-        style={[
-          styles.planCard,
-          selectedPlan === "monthly" && styles.planCardSelected,
-        ]}
+        style={[s.planCard, selectedPlan === "monthly" && s.planCardSelected]}
         onPress={() => onSelectPlan("monthly")}
       >
-        <View style={styles.planRow}>
+        <View style={s.planRow}>
           <View>
-            <Text style={styles.planName}>Monthly</Text>
-            <Text style={styles.planDetail}>$9.99/month</Text>
+            <Text style={s.planName}>Monthly</Text>
+            <Text style={s.planDetail}>$9.99/month</Text>
           </View>
-          <Text style={styles.planPrice}>$2.99/week</Text>
+          <Text style={s.planPrice}>$2.99/week</Text>
         </View>
       </Pressable>
 
-      <Pressable style={styles.subscribeBtn} onPress={onSubscribe}>
-        <Text style={styles.subscribeBtnText}>Start your free 7-day trial</Text>
+      <Pressable style={s.ctaBtn} onPress={onSubscribe}>
+        <Text style={s.ctaBtnText}>Start your free 7-day trial</Text>
       </Pressable>
 
-      <Text style={styles.subscriptionFine}>
+      <Text style={s.finePrint}>
         Cancel anytime. Secure payment via App Store or Google Play.
       </Text>
 
-      <Pressable onPress={onSkip} style={styles.skipSubscription}>
-        <Text style={styles.skipSubscriptionText}>Maybe later</Text>
+      <Pressable onPress={onSkip} style={s.skipSub}>
+        <Text style={s.skipSubText}>Maybe later</Text>
       </Pressable>
     </View>
   );
@@ -471,7 +541,7 @@ function SubscriptionStep({
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const screenWidth = Dimensions.get("window").width;
+  const { width: screenWidth } = useWindowDimensions();
   const isWide = screenWidth >= WIDE_BREAKPOINT;
 
   const [step, setStep] = useState(0);
@@ -479,7 +549,9 @@ export default function OnboardingScreen() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [bookLikes, setBookLikes] = useState<BookLike[]>([]);
   const [currentBookIndex, setCurrentBookIndex] = useState(0);
-  const [selectedPlan, setSelectedPlan] = useState<"annual" | "monthly">("annual");
+  const [selectedPlan, setSelectedPlan] = useState<"annual" | "monthly">(
+    "annual"
+  );
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -588,7 +660,7 @@ export default function OnboardingScreen() {
     (step === 0 && selectedGoals.length > 0) ||
     (step === 1 && selectedCategories.length > 0);
 
-  const renderContent = () => {
+  const renderStepContent = () => {
     switch (step) {
       case 0:
         return <GoalsStep selected={selectedGoals} onToggle={toggleGoal} />;
@@ -625,250 +697,276 @@ export default function OnboardingScreen() {
   };
 
   const showProgressBar = step < 3;
-  const showNextButton = step < 2;
-  const artSource = ART_BY_STEP[step];
+  const showContinueBtn = step < 2;
+
+  const formContent = (
+    <View style={s.formPanel}>
+      <ScrollView
+        contentContainerStyle={s.formScroll}
+        showsVerticalScrollIndicator={false}
+      >
+        {showProgressBar && <ProgressBar step={step} />}
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+            flex: 1,
+          }}
+        >
+          {renderStepContent()}
+        </Animated.View>
+        {showContinueBtn && (
+          <Pressable
+            style={[s.ctaBtn, !canContinue && s.ctaBtnDisabled]}
+            onPress={handleNext}
+            disabled={!canContinue}
+          >
+            <Text style={s.ctaBtnText}>Continue</Text>
+          </Pressable>
+        )}
+      </ScrollView>
+    </View>
+  );
 
   if (isWide) {
     return (
-      <View style={styles.container}>
-        <View style={styles.leftPanel}>
-          <ScrollView
-            contentContainerStyle={styles.leftPanelScroll}
-            showsVerticalScrollIndicator={false}
-          >
-            {showProgressBar && <ProgressBar step={step} />}
-            <Animated.View
-              style={{
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-                flex: 1,
-              }}
-            >
-              {renderContent()}
-            </Animated.View>
-            {showNextButton && (
-              <Pressable
-                style={[
-                  styles.continueBtn,
-                  !canContinue && styles.continueBtnDisabled,
-                ]}
-                onPress={handleNext}
-                disabled={!canContinue}
-              >
-                <Text style={styles.continueBtnText}>Continue</Text>
-              </Pressable>
-            )}
-          </ScrollView>
-        </View>
-        {artSource != null && (
-          <View style={styles.rightPanel}>
+      <SafeAreaView style={s.safeArea}>
+        <View style={s.splitContainer}>
+          {formContent}
+          <View style={s.artPanelWide}>
             <Image
-              source={artSource}
-              style={styles.artImage}
+              source={artImage}
+              style={s.artImg}
               resizeMode="cover"
             />
           </View>
-        )}
-      </View>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.mobileScroll}
-      showsVerticalScrollIndicator={false}
-    >
-      {artSource != null && (
-        <Image
-          source={artSource}
-          style={styles.mobileBanner}
-          resizeMode="cover"
-        />
-      )}
-      {showProgressBar && <ProgressBar step={step} />}
-      <Animated.View
-        style={{
-          opacity: fadeAnim,
-          transform: [{ translateY: slideAnim }],
-        }}
+    <SafeAreaView style={s.safeArea}>
+      <ScrollView
+        contentContainerStyle={s.mobileScroll}
+        showsVerticalScrollIndicator={false}
       >
-        {renderContent()}
-      </Animated.View>
-      {showNextButton && (
-        <Pressable
-          style={[
-            styles.continueBtn,
-            !canContinue && styles.continueBtnDisabled,
-            { marginHorizontal: 24, marginBottom: 40 },
-          ]}
-          onPress={handleNext}
-          disabled={!canContinue}
-        >
-          <Text style={styles.continueBtnText}>Continue</Text>
-        </Pressable>
-      )}
-    </ScrollView>
+        <View style={s.artPanelMobile}>
+          <Image source={artImage} style={s.artImg} resizeMode="cover" />
+        </View>
+        <View style={s.mobileContent}>
+          {showProgressBar && <ProgressBar step={step} />}
+          <Animated.View
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }}
+          >
+            {renderStepContent()}
+          </Animated.View>
+          {showContinueBtn && (
+            <Pressable
+              style={[s.ctaBtn, !canContinue && s.ctaBtnDisabled]}
+              onPress={handleNext}
+              disabled={!canContinue}
+            >
+              <Text style={s.ctaBtnText}>Continue</Text>
+            </Pressable>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 /* ---------- styles ---------- */
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.background,
+const s = StyleSheet.create({
+  safeArea: {
     flex: 1,
+    backgroundColor: colors.background,
   },
 
-  /* two-panel desktop */
-  leftPanel: {
+  /* ---------- two-panel desktop ---------- */
+  splitContainer: {
     flex: 1,
-    maxWidth: 600,
-    paddingHorizontal: 48,
-    paddingVertical: 40,
+    flexDirection: "row",
   },
-  leftPanelScroll: {
+  formPanel: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingHorizontal: 40,
+    paddingVertical: 32,
+  },
+  formScroll: {
     flexGrow: 1,
+    maxWidth: 520,
   },
-  rightPanel: {
+  artPanelWide: {
     flex: 1,
     overflow: "hidden",
   },
-  artImage: {
-    height: "100%",
+  artImg: {
     width: "100%",
+    height: "100%",
   },
 
-  /* mobile stacked */
+  /* ---------- mobile stacked ---------- */
   mobileScroll: {
     flexGrow: 1,
     paddingBottom: 40,
   },
-  mobileBanner: {
-    height: 260,
+  artPanelMobile: {
     width: "100%",
-  },
-
-  /* progress bar */
-  progressBarContainer: {
-    marginBottom: 24,
-    paddingHorizontal: 4,
-  },
-  progressBarTrack: {
-    backgroundColor: colors.border,
-    borderRadius: 6,
-    height: 6,
+    height: 220,
     overflow: "hidden",
   },
-  progressBarFill: {
+  mobileContent: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+  },
+
+  /* ---------- progress bar ---------- */
+  progressContainer: {
+    marginBottom: 28,
+  },
+  progressTrack: {
+    backgroundColor: colors.border,
+    borderRadius: 4,
+    height: 4,
+    overflow: "hidden",
+  },
+  progressFill: {
     backgroundColor: colors.accent,
-    borderRadius: 6,
+    borderRadius: 4,
     height: "100%",
   },
-  progressBarLabel: {
+  progressLabel: {
     color: colors.textSecondary,
     fontSize: 13,
     marginTop: 8,
   },
 
-  /* step content */
-  stepContent: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 16,
+  /* ---------- step content ---------- */
+  stepBody: {
+    paddingTop: 8,
   },
-  stepTitle: {
+  stepHeading: {
     color: colors.text,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "700",
-    lineHeight: 36,
+    lineHeight: 34,
   },
-  stepSubtitle: {
+  stepSubheading: {
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 22,
     marginTop: 8,
+    marginBottom: 4,
   },
 
-  /* multi-select options */
+  /* ---------- option cards (Ferndesk-style) ---------- */
   optionsList: {
-    gap: 12,
-    marginTop: 24,
+    gap: 10,
+    marginTop: 20,
   },
   optionCard: {
     alignItems: "center",
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 2,
+    borderRadius: 12,
+    borderWidth: 1,
     flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 16,
+    gap: 14,
+    paddingHorizontal: 14,
     paddingVertical: 14,
   },
   optionCardSelected: {
-    borderColor: colors.accent,
+    borderColor: colors.text,
+    borderWidth: 2,
   },
-  optionIcon: {
-    fontSize: 22,
+  optionIconCircle: {
+    alignItems: "center",
+    backgroundColor: "#f5f5f4",
+    borderRadius: 12,
+    height: 44,
+    justifyContent: "center",
+    width: 44,
   },
-  optionLabel: {
-    color: colors.text,
+  optionIconCircleSelected: {
+    backgroundColor: "#e7e5e4",
+  },
+  optionIconText: {
+    fontSize: 20,
+  },
+  optionTextCol: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: "500",
   },
-  optionLabelSelected: {
-    color: colors.accent,
+  optionTitle: {
+    color: colors.text,
+    fontSize: 15,
     fontWeight: "600",
   },
-  checkmark: {
-    color: colors.accent,
+  optionTitleSelected: {
+    fontWeight: "700",
+  },
+  optionSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  optionArrow: {
+    color: colors.textMuted,
     fontSize: 18,
+  },
+  optionCheck: {
+    color: colors.text,
+    fontSize: 16,
     fontWeight: "700",
   },
 
-  /* book picks */
+  /* ---------- book picks ---------- */
   bookCard: {
     alignItems: "center",
     alignSelf: "center",
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
-    marginTop: 24,
+    marginTop: 20,
     padding: 20,
     width: "100%",
-    maxWidth: 320,
+    maxWidth: 300,
   },
   bookCover: {
-    borderRadius: 12,
-    height: 240,
-    width: 160,
+    borderRadius: 10,
+    height: 220,
+    width: 150,
   },
   bookTitle: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "700",
-    marginTop: 16,
+    marginTop: 14,
     textAlign: "center",
   },
   bookAuthor: {
     color: colors.textSecondary,
-    fontSize: 15,
+    fontSize: 14,
     marginTop: 4,
     textAlign: "center",
   },
-  bookCategoryBadge: {
-    backgroundColor: colors.border,
+  bookBadge: {
+    backgroundColor: "#f5f5f4",
     borderRadius: 20,
-    marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
   },
-  bookCategoryText: {
+  bookBadgeText: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: "500",
   },
   voteRow: {
@@ -876,118 +974,124 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 20,
     justifyContent: "center",
-    marginTop: 24,
+    marginTop: 20,
   },
   voteBtn: {
     alignItems: "center",
     backgroundColor: colors.surface,
     borderColor: colors.border,
     borderRadius: 999,
-    borderWidth: 2,
-    height: 64,
+    borderWidth: 1,
+    height: 56,
     justifyContent: "center",
-    width: 64,
+    width: 56,
   },
   voteBtnLike: {
     borderColor: colors.accent,
   },
-  voteBtnText: {
-    fontSize: 28,
+  voteBtnEmoji: {
+    fontSize: 24,
   },
-  skipBtn: {
-    paddingHorizontal: 16,
+  skipLink: {
+    paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  skipBtnText: {
+  skipLinkText: {
     color: colors.textMuted,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "500",
   },
   bookCounter: {
     color: colors.textMuted,
-    fontSize: 14,
-    marginTop: 16,
+    fontSize: 13,
+    marginTop: 12,
     textAlign: "center",
   },
 
-  /* preparing step */
-  preparingContainer: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 24,
+  /* ---------- preparing step (Ferndesk style) ---------- */
+  preparingBarContainer: {
+    marginTop: 24,
+    marginBottom: 28,
   },
-  progressRingOuter: {
-    alignItems: "center",
-    borderColor: colors.border,
-    borderRadius: 80,
-    borderWidth: 6,
-    height: 160,
-    justifyContent: "center",
-    width: 160,
+  preparingBarTrack: {
+    backgroundColor: colors.border,
+    borderRadius: 4,
+    height: 6,
+    overflow: "hidden",
   },
-  progressRingSpinner: {
-    borderColor: "transparent",
-    borderRadius: 80,
-    borderTopColor: colors.accent,
-    borderWidth: 4,
-    height: 160,
-    left: -6,
-    position: "absolute",
-    top: -6,
-    width: 160,
-  },
-  progressRingText: {
-    color: colors.text,
-    fontSize: 36,
-    fontWeight: "700",
-  },
-  preparingTitle: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: "700",
-    marginTop: 32,
+  preparingBarFill: {
+    backgroundColor: colors.text,
+    borderRadius: 4,
+    height: "100%",
   },
   preparingChecklist: {
-    gap: 16,
-    marginTop: 24,
+    gap: 0,
   },
   preparingItem: {
-    alignItems: "center",
     flexDirection: "row",
-    gap: 12,
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 10,
+    position: "relative",
   },
-  preparingCheck: {
-    fontSize: 20,
+  preparingDot: {
+    alignItems: "center",
+    backgroundColor: colors.border,
+    borderRadius: 12,
+    height: 24,
+    justifyContent: "center",
+    width: 24,
+  },
+  preparingDotDone: {
+    backgroundColor: colors.accent,
+  },
+  preparingDotActive: {
+    backgroundColor: colors.border,
+  },
+  preparingDotCheck: {
+    color: colors.primaryText,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  preparingLine: {
+    backgroundColor: colors.border,
+    height: 20,
+    left: 11,
+    position: "absolute",
+    top: 34,
+    width: 2,
+  },
+  preparingLineDone: {
+    backgroundColor: colors.accent,
   },
   preparingLabel: {
+    color: colors.textMuted,
+    fontSize: 15,
+  },
+  preparingLabelDone: {
+    color: colors.textSecondary,
+  },
+  preparingLabelActive: {
     color: colors.text,
-    fontSize: 16,
+    fontWeight: "600",
   },
 
-  /* subscription */
-  subscriptionHeading: {
-    color: colors.text,
-    fontSize: 32,
-    fontWeight: "800",
-    textAlign: "center",
-  },
+  /* ---------- subscription ---------- */
   ratingRow: {
     alignItems: "center",
     flexDirection: "row",
     gap: 8,
-    justifyContent: "center",
     marginTop: 12,
   },
   stars: {
-    fontSize: 16,
+    fontSize: 14,
   },
   ratingText: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 13,
   },
   featureList: {
-    gap: 12,
+    gap: 10,
     marginTop: 24,
   },
   featureItem: {
@@ -997,35 +1101,36 @@ const styles = StyleSheet.create({
   },
   featureCheck: {
     color: colors.accent,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
   },
   featureText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 15,
   },
   planCard: {
     backgroundColor: colors.surface,
     borderColor: colors.border,
-    borderRadius: 14,
-    borderWidth: 2,
-    marginTop: 16,
-    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 14,
+    padding: 14,
   },
   planCardSelected: {
-    borderColor: colors.accent,
+    borderColor: colors.text,
+    borderWidth: 2,
   },
   planBadge: {
     alignSelf: "flex-end",
     backgroundColor: colors.accent,
-    borderRadius: 8,
-    marginBottom: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    borderRadius: 6,
+    marginBottom: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
   },
   planBadgeText: {
     color: colors.primaryText,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     letterSpacing: 0.5,
   },
@@ -1036,63 +1141,51 @@ const styles = StyleSheet.create({
   },
   planName: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
   },
   planDetail: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 2,
   },
   planPrice: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "700",
   },
-  subscribeBtn: {
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    marginTop: 24,
-    paddingVertical: 16,
-  },
-  subscribeBtnText: {
-    color: colors.primaryText,
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  subscriptionFine: {
+  finePrint: {
     color: colors.textMuted,
-    fontSize: 13,
+    fontSize: 12,
     marginTop: 12,
     textAlign: "center",
   },
-  skipSubscription: {
+  skipSub: {
     alignItems: "center",
-    marginTop: 16,
+    marginTop: 14,
     paddingVertical: 8,
   },
-  skipSubscriptionText: {
+  skipSubText: {
     color: colors.textSecondary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "500",
     textDecorationLine: "underline",
   },
 
-  /* continue button */
-  continueBtn: {
+  /* ---------- CTA button ---------- */
+  ctaBtn: {
     alignItems: "center",
     backgroundColor: colors.primary,
-    borderRadius: 14,
+    borderRadius: 10,
     marginTop: 24,
     paddingVertical: 16,
   },
-  continueBtnDisabled: {
-    opacity: 0.4,
+  ctaBtnDisabled: {
+    opacity: 0.35,
   },
-  continueBtnText: {
+  ctaBtnText: {
     color: colors.primaryText,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "700",
   },
 });
