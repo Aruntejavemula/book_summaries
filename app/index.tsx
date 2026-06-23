@@ -19,7 +19,12 @@ export default function Index() {
     }
   }, [session]);
 
-  if (isLoading && !BYPASS_LOGIN) {
+  /* When bypass is on, always send to onboarding so we can test the flow */
+  if (BYPASS_LOGIN) {
+    return <Redirect href="/(onboarding)" />;
+  }
+
+  if (isLoading) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.text} />
@@ -27,7 +32,7 @@ export default function Index() {
     );
   }
 
-  if (!BYPASS_LOGIN && !session) {
+  if (!session) {
     return <Redirect href="/(auth)/login" />;
   }
 
