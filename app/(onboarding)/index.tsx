@@ -38,8 +38,14 @@ import {
   setOnboardingCompleted
 } from "../../lib/onboarding";
 
-/* ---------- art asset (same as login, approved by user) ---------- */
-const artImage = require("../../assets/login-art.png") as number;
+/* ---------- colour palettes per step ---------- */
+const STEP_PALETTES: { bg: string; shapes: string[] }[] = [
+  { bg: "#FFF7ED", shapes: ["#FB923C", "#FDBA74", "#F97316", "#FED7AA", "#EA580C"] },
+  { bg: "#ECFDF5", shapes: ["#34D399", "#6EE7B7", "#10B981", "#A7F3D0", "#059669"] },
+  { bg: "#F5F3FF", shapes: ["#A78BFA", "#C4B5FD", "#8B5CF6", "#DDD6FE", "#7C3AED"] },
+  { bg: "#EFF6FF", shapes: ["#60A5FA", "#93C5FD", "#3B82F6", "#BFDBFE", "#2563EB"] },
+  { bg: "#FFFBEB", shapes: ["#FBBF24", "#FCD34D", "#F59E0B", "#FDE68A", "#D97706"] },
+];
 
 /* ---------- data ---------- */
 
@@ -281,7 +287,211 @@ function FloatingCTA({
   );
 }
 
-/* ---------- progress bar (spring-filled, Blinkist thin pill) ---------- */
+/* ---------- animated abstract art ---------- */
+
+interface ShapeConfig {
+  type: "circle" | "rect" | "book" | "diamond";
+  size: number;
+  color: string;
+  x: number;
+  y: number;
+  rotation?: number;
+}
+
+function getShapesForStep(step: number): ShapeConfig[] {
+  const palette = STEP_PALETTES[step] ?? STEP_PALETTES[0];
+  const c = palette.shapes;
+
+  switch (step) {
+    case 0:
+      return [
+        { type: "circle", size: 140, color: c[0], x: 15, y: 8 },
+        { type: "circle", size: 90, color: c[1], x: 60, y: 55 },
+        { type: "book", size: 120, color: c[2], x: 10, y: 50, rotation: -12 },
+        { type: "circle", size: 50, color: c[3], x: 70, y: 15 },
+        { type: "diamond", size: 40, color: c[4], x: 45, y: 35 },
+        { type: "circle", size: 30, color: c[1], x: 30, y: 78 },
+        { type: "rect", size: 60, color: c[3], x: 55, y: 75, rotation: 20 },
+      ];
+    case 1:
+      return [
+        { type: "rect", size: 160, color: c[0], x: 5, y: 5, rotation: 10 },
+        { type: "rect", size: 100, color: c[1], x: 50, y: 45, rotation: -8 },
+        { type: "circle", size: 80, color: c[2], x: 65, y: 10 },
+        { type: "book", size: 90, color: c[3], x: 20, y: 60, rotation: 5 },
+        { type: "diamond", size: 50, color: c[4], x: 40, y: 20 },
+        { type: "circle", size: 40, color: c[0], x: 10, y: 80 },
+        { type: "rect", size: 45, color: c[2], x: 75, y: 70, rotation: -15 },
+      ];
+    case 2:
+      return [
+        { type: "book", size: 150, color: c[0], x: 10, y: 10, rotation: -8 },
+        { type: "book", size: 110, color: c[1], x: 45, y: 40, rotation: 12 },
+        { type: "circle", size: 70, color: c[2], x: 70, y: 8 },
+        { type: "diamond", size: 60, color: c[3], x: 25, y: 65 },
+        { type: "circle", size: 45, color: c[4], x: 60, y: 72 },
+        { type: "rect", size: 35, color: c[1], x: 5, y: 45, rotation: 25 },
+        { type: "circle", size: 25, color: c[3], x: 80, y: 50 },
+      ];
+    case 3:
+      return [
+        { type: "circle", size: 180, color: c[0], x: 20, y: 15 },
+        { type: "circle", size: 130, color: c[1], x: 20, y: 15 },
+        { type: "circle", size: 80, color: c[2], x: 20, y: 15 },
+        { type: "diamond", size: 50, color: c[3], x: 65, y: 60 },
+        { type: "rect", size: 40, color: c[4], x: 10, y: 70, rotation: 30 },
+        { type: "circle", size: 35, color: c[3], x: 75, y: 20 },
+        { type: "diamond", size: 30, color: c[0], x: 55, y: 80 },
+      ];
+    case 4:
+    default:
+      return [
+        { type: "diamond", size: 120, color: c[0], x: 30, y: 10 },
+        { type: "circle", size: 100, color: c[1], x: 10, y: 50 },
+        { type: "diamond", size: 80, color: c[2], x: 55, y: 55 },
+        { type: "book", size: 90, color: c[3], x: 60, y: 5, rotation: 15 },
+        { type: "circle", size: 50, color: c[4], x: 40, y: 75 },
+        { type: "rect", size: 40, color: c[0], x: 5, y: 20, rotation: -20 },
+        { type: "circle", size: 30, color: c[2], x: 80, y: 40 },
+      ];
+  }
+}
+
+function AnimatedShape({ shape, index }: { shape: ShapeConfig; index: number }) {
+  const floatY = useSharedValue(0);
+  const floatX = useSharedValue(0);
+  const scaleAnim = useSharedValue(1);
+
+  useEffect(() => {
+    const yDuration = 2800 + index * 400;
+    const xDuration = 3500 + index * 500;
+    const scaleDuration = 4000 + index * 600;
+
+    floatY.value = withRepeat(
+      withSequence(
+        withTiming(12 + index * 3, { duration: yDuration }),
+        withTiming(-(8 + index * 2), { duration: yDuration })
+      ),
+      -1,
+      true
+    );
+
+    floatX.value = withRepeat(
+      withSequence(
+        withTiming(6 + index * 2, { duration: xDuration }),
+        withTiming(-(6 + index * 2), { duration: xDuration })
+      ),
+      -1,
+      true
+    );
+
+    scaleAnim.value = withRepeat(
+      withSequence(
+        withTiming(1.08, { duration: scaleDuration }),
+        withTiming(0.95, { duration: scaleDuration })
+      ),
+      -1,
+      true
+    );
+  }, [floatY, floatX, scaleAnim, index]);
+
+  const rotation = shape.rotation ?? 0;
+  const isDiamond = shape.type === "diamond";
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: floatY.value },
+      { translateX: floatX.value },
+      { scale: scaleAnim.value },
+      { rotate: isDiamond ? "45deg" : `${rotation}deg` },
+    ],
+  }));
+
+  const baseStyle = {
+    position: "absolute" as const,
+    left: `${shape.x}%` as `${number}%`,
+    top: `${shape.y}%` as `${number}%`,
+    opacity: 0.7,
+  };
+
+  const shapeStyle = (() => {
+    switch (shape.type) {
+      case "circle":
+        return {
+          width: shape.size,
+          height: shape.size,
+          borderRadius: shape.size / 2,
+          backgroundColor: shape.color,
+        };
+      case "rect":
+        return {
+          width: shape.size,
+          height: shape.size * 0.6,
+          borderRadius: shape.size * 0.15,
+          backgroundColor: shape.color,
+        };
+      case "book":
+        return {
+          width: shape.size * 0.7,
+          height: shape.size,
+          borderRadius: shape.size * 0.08,
+          backgroundColor: shape.color,
+          borderLeftWidth: shape.size * 0.06,
+          borderLeftColor: "rgba(0,0,0,0.15)",
+        };
+      case "diamond":
+        return {
+          width: shape.size,
+          height: shape.size,
+          borderRadius: shape.size * 0.18,
+          backgroundColor: shape.color,
+        };
+      default:
+        return {};
+    }
+  })();
+
+  return <Animated.View style={[baseStyle, shapeStyle, animStyle]} />;
+}
+
+function AbstractArtPanel({ step }: { step: number }) {
+  const palette = STEP_PALETTES[step] ?? STEP_PALETTES[0];
+  const shapes = getShapesForStep(step);
+  const panelFade = useSharedValue(1);
+
+  useEffect(() => {
+    panelFade.value = 0;
+    panelFade.value = withTiming(1, { duration: 600 });
+  }, [step, panelFade]);
+
+  const fadeStyle = useAnimatedStyle(() => ({
+    opacity: panelFade.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        artStyles.container,
+        { backgroundColor: palette.bg },
+        fadeStyle,
+      ]}
+    >
+      {shapes.map((shape, i) => (
+        <AnimatedShape key={`${step}-${i}`} shape={shape} index={i} />
+      ))}
+    </Animated.View>
+  );
+}
+
+const artStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    overflow: "hidden",
+    position: "relative",
+  },
+});
+
+/* ---------- sub-components ---------- */
 
 function ProgressBar({ step }: { step: number }) {
   const progress = Math.min(((step + 1) / TOTAL_VISIBLE_STEPS) * 100, 100);
@@ -1246,6 +1456,8 @@ export default function OnboardingScreen() {
   const showProgressBar = step < 5;
   const showContinueBtn = step < 4;
 
+  const artOnLeft = step % 2 === 1;
+
   const formContent = (
     <View style={s.formPanel}>
       <ScrollView
@@ -1270,14 +1482,14 @@ export default function OnboardingScreen() {
     </View>
   );
 
+  const artPanel = <AbstractArtPanel step={step} />;
+
   if (isWide) {
     return (
       <SafeAreaView style={s.safeArea}>
         <View style={s.splitContainer}>
-          {formContent}
-          <View style={s.artPanelWide}>
-            <Image source={artImage} style={s.artImg} resizeMode="cover" />
-          </View>
+          {artOnLeft ? artPanel : formContent}
+          {artOnLeft ? formContent : artPanel}
         </View>
       </SafeAreaView>
     );
@@ -1285,9 +1497,6 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={s.safeArea}>
-      {/* art sits behind the content so the phone never shows an empty page */}
-      <Image source={artImage} style={s.artBgMobile} resizeMode="cover" />
-      <View style={s.artBgOverlay} />
       <ScrollView
         contentContainerStyle={s.mobileScroll}
         showsVerticalScrollIndicator={false}
@@ -1336,34 +1545,8 @@ const s = StyleSheet.create({
     flexGrow: 1,
     maxWidth: 520
   },
-  artPanelWide: {
-    flex: 1,
-    overflow: "hidden"
-  },
-  artImg: {
-    width: "100%",
-    height: "100%"
-  },
 
-  /* ---------- art backdrop (mobile only, behind content) ---------- */
-  artBgMobile: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: "100%",
-    height: "100%",
-    opacity: 0.4
-  },
-  artBgOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: colors.overlay
-  },
+
 
   /* ---------- mobile ---------- */
   mobileScroll: {
