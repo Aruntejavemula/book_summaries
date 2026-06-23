@@ -751,9 +751,6 @@ export default function OnboardingScreen() {
         contentContainerStyle={s.mobileScroll}
         showsVerticalScrollIndicator={false}
       >
-        <View style={s.artPanelMobile}>
-          <Image source={artImage} style={s.artImg} resizeMode="cover" />
-        </View>
         <View style={s.mobileContent}>
           {showProgressBar && <ProgressBar step={step} />}
           <Animated.View
@@ -811,19 +808,14 @@ const s = StyleSheet.create({
     height: "100%",
   },
 
-  /* ---------- mobile stacked ---------- */
+  /* ---------- mobile ---------- */
   mobileScroll: {
     flexGrow: 1,
     paddingBottom: 40,
   },
-  artPanelMobile: {
-    width: "100%",
-    height: 220,
-    overflow: "hidden",
-  },
   mobileContent: {
     paddingHorizontal: 24,
-    paddingTop: 20,
+    paddingTop: 24,
   },
 
   /* ---------- progress bar ---------- */
