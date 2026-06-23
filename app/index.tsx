@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
-import { Text, View } from "react-native";
 
+import { colors } from "../constants/colors";
 import { useAuthSession } from "../lib/auth-session";
 import { getOnboardingCompleted } from "../lib/onboarding";
 
@@ -10,13 +11,27 @@ export default function Index() {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
-    void getOnboardingCompleted().then(setHasCompletedOnboarding);
-  }, []);
+    if (session) {
+      void getOnboardingCompleted().then(setHasCompletedOnboarding);
+    }
+  }, [session]);
 
-  if (isLoading || hasCompletedOnboarding === null) {
+  if (isLoading) {
     return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <Text>Loading...</Text>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.text} />
+      </View>
+    );
+  }
+
+  if (!session) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
+  if (hasCompletedOnboarding === null) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.text} />
       </View>
     );
   }
@@ -25,5 +40,5 @@ export default function Index() {
     return <Redirect href="/(onboarding)" />;
   }
 
-  return <Redirect href={session ? "/(tabs)" : "/(auth)/login"} />;
+  return <Redirect href="/(tabs)" />;
 }
