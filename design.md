@@ -143,28 +143,9 @@ Conventions:
 - [x] **Onboarding persistence** — DB-first completion check (returns skip onboarding for returning users on new devices), AsyncStorage fallback, saves goals/genres/reading_time/reading_time_of_day/book_likes
 - [x] **Edge-function client wrappers** — `lib/iap.ts`, `lib/r2.ts` with typed errors
 - [x] **Dev flags** — `constants/dev-flags.ts` with `BYPASS_LOGIN` + `FORCE_ONBOARDING` (shared across index + login + register)
+- [x] **DB migrations applied** — all 6 migrations applied to live Supabase project ("Book Summary"): `user_preferences` (goals[], genres[], reading_time, reading_time_of_day, onboarding_completed) + `user_book_likes` tables with RLS policies, indexes, and `set_updated_at` trigger
 
-### TODO (tackle tomorrow)
-
-**1. Add new columns to Supabase `user_preferences` table (DO THIS FIRST)**
-
-The onboarding now collects two new answers (reading time + reading time of day) but the database table doesn't have columns for them yet. The migration file is already written — it just needs to be applied to your live Supabase project.
-
-- **File to apply:** `supabase/migrations/20260623_0006_reading_time_fields.sql`
-- **What it adds:** two new columns to the `user_preferences` table:
-  - `reading_time` (text, nullable) — stores the user's selected reading duration ("5min", "15min", "30min", "60min")
-  - `reading_time_of_day` (text, nullable) — stores when they prefer to read ("morning", "afternoon", "evening", "night")
-- **How to apply it (pick one):**
-  - **Option A — Supabase CLI:** run `supabase db push` from the project root
-  - **Option B — Supabase Dashboard:** go to your project → SQL Editor → paste the contents of the file → Run
-- **SQL contents (for reference):**
-  ```sql
-  alter table public.user_preferences
-    add column if not exists reading_time text,
-    add column if not exists reading_time_of_day text;
-  ```
-- **Why it matters:** without these columns, `saveUserPreferences()` in `lib/onboarding.ts` will fail silently when it tries to upsert `reading_time` and `reading_time_of_day` (the error is logged to console but the user won't see it). Onboarding completion will still save via the local AsyncStorage flag, but the DB row won't have the new answers.
-- **After applying:** verify in Supabase Dashboard → Table Editor → `user_preferences` → confirm both columns appear.
+### TODO
 
 - [ ] **Turn off dev flags before release** — set `BYPASS_LOGIN = false` and `FORCE_ONBOARDING = false` in `constants/dev-flags.ts`
 - [ ] **`(tabs)/index` (Home/browse)** — main browse screen, book grid, search, category filters [STUB ~21 lines]
