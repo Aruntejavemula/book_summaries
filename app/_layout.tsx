@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Linking } from "react-native";
 import { Stack } from "expo-router";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { AuthSessionProvider } from "../lib/auth-session";
 import { handleAuthCallback } from "../lib/auth";
@@ -29,14 +30,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AuthSessionProvider>
-      <Stack screenOptions={{ headerTitleAlign: "center" }}>
-        <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="book/[id]" options={{ title: "Book details" }} />
-        <Stack.Screen name="player/[id]" options={{ title: "Audio player" }} />
-      </Stack>
-    </AuthSessionProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthSessionProvider>
+        <Stack screenOptions={{ headerTitleAlign: "center" }}>
+          <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="book/[id]" options={{ title: "Book details" }} />
+          <Stack.Screen name="player/[id]" options={{ title: "Audio player" }} />
+        </Stack>
+      </AuthSessionProvider>
+    </GestureHandlerRootView>
   );
 }

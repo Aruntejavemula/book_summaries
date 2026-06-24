@@ -14,6 +14,8 @@ import { Link, useRouter } from "expo-router";
 
 import { useAuthSession } from "../../lib/auth-session";
 import { supabase } from "../../lib/supabase";
+import { BYPASS_LOGIN } from "../../constants/dev-flags";
+import { colors } from "../../constants/colors";
 
 const { width: screenWidth } = Dimensions.get("window");
 const isWideScreen = screenWidth >= 768;
@@ -28,10 +30,18 @@ export default function RegisterScreen() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
+    if (BYPASS_LOGIN) {
+      router.replace("/(onboarding)");
+      return;
+    }
     if (!isLoading && session) {
       router.replace("/(tabs)");
     }
   }, [isLoading, router, session]);
+
+  if (BYPASS_LOGIN) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
 
   const handleRegister = async () => {
     setIsSubmitting(true);
@@ -90,7 +100,7 @@ export default function RegisterScreen() {
           keyboardType="email-address"
           onChangeText={setEmail}
           placeholder="you@example.com"
-          placeholderTextColor="#a8a29e"
+          placeholderTextColor={colors.textMuted}
           style={styles.input}
           value={email}
         />
@@ -103,7 +113,7 @@ export default function RegisterScreen() {
           autoComplete="password"
           onChangeText={setPassword}
           placeholder="Create a password"
-          placeholderTextColor="#a8a29e"
+          placeholderTextColor={colors.textMuted}
           secureTextEntry
           style={styles.input}
           value={password}
@@ -196,7 +206,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FAF9F6"
+    backgroundColor: colors.background
   },
   splitContainer: {
     flex: 1,
@@ -207,7 +217,7 @@ const styles = StyleSheet.create({
   },
   formPanel: {
     flex: 1,
-    backgroundColor: "#FAF9F6",
+    backgroundColor: colors.background,
     justifyContent: "center",
     paddingHorizontal: 40,
     paddingVertical: 32
@@ -219,55 +229,55 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#44403c",
+    color: colors.textSecondary,
     marginBottom: 36,
     letterSpacing: 0.5
   },
   heading: {
     fontSize: 28,
     fontWeight: "800",
-    color: "#1c1917",
+    color: colors.text,
     marginBottom: 8
   },
   subheading: {
     fontSize: 15,
-    color: "#78716c",
+    color: colors.textSecondary,
     marginBottom: 28,
     lineHeight: 22
   },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#44403c",
+    color: colors.text,
     marginBottom: 6
   },
   required: {
-    color: "#dc2626"
+    color: colors.accent
   },
   input: {
-    backgroundColor: "#FFFFFF",
-    borderColor: "#e7e5e4",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 10,
     borderWidth: 1,
-    color: "#1c1917",
+    color: colors.text,
     fontSize: 16,
     marginBottom: 16,
     paddingHorizontal: 14,
     paddingVertical: 12
   },
   error: {
-    color: "#dc2626",
+    color: colors.accent,
     fontSize: 14,
     marginBottom: 12
   },
   success: {
-    color: "#16a34a",
+    color: colors.secondary,
     fontSize: 14,
     marginBottom: 12
   },
   primaryButton: {
     alignItems: "center",
-    backgroundColor: "#1c1917",
+    backgroundColor: colors.accent,
     borderRadius: 10,
     paddingVertical: 14,
     marginBottom: 12
@@ -276,14 +286,14 @@ const styles = StyleSheet.create({
     opacity: 0.85
   },
   primaryButtonText: {
-    color: "#FFFFFF",
+    color: colors.accentText,
     fontSize: 16,
     fontWeight: "700"
   },
   oauthButton: {
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderColor: "#e7e5e4",
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 10,
     borderWidth: 1,
     flexDirection: "row",
@@ -292,23 +302,23 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   oauthButtonPressed: {
-    backgroundColor: "#f5f5f4"
+    backgroundColor: colors.surfaceElevated
   },
   oauthButtonText: {
-    color: "#1c1917",
+    color: colors.text,
     fontSize: 15,
     fontWeight: "600"
   },
   googleIcon: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#4285F4",
+    color: colors.accent,
     marginRight: 10
   },
   appleIcon: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#1c1917",
+    color: colors.text,
     marginRight: 10
   },
   footerRow: {
@@ -318,11 +328,11 @@ const styles = StyleSheet.create({
     marginTop: 20
   },
   footerText: {
-    color: "#78716c",
+    color: colors.textSecondary,
     fontSize: 14
   },
   footerLink: {
-    color: "#16a34a",
+    color: colors.accent,
     fontSize: 14,
     fontWeight: "700"
   },

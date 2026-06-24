@@ -3,11 +3,9 @@ import { ActivityIndicator, View } from "react-native";
 import { Redirect } from "expo-router";
 
 import { colors } from "../constants/colors";
+import { BYPASS_LOGIN, FORCE_ONBOARDING } from "../constants/dev-flags";
 import { useAuthSession } from "../lib/auth-session";
 import { getOnboardingCompleted } from "../lib/onboarding";
-
-/* Set to true to skip login and go straight to onboarding (for testing) */
-const BYPASS_LOGIN = true;
 
 export default function Index() {
   const { isLoading, session } = useAuthSession();
@@ -27,11 +25,12 @@ export default function Index() {
     );
   }
 
+  // Flow: login (off when BYPASS_LOGIN) -> onboarding -> tabs
   if (!BYPASS_LOGIN && !session) {
     return <Redirect href="/(auth)/login" />;
   }
 
-  if (hasCompletedOnboarding === null) {
+  if (!FORCE_ONBOARDING && hasCompletedOnboarding === null) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.text} />
@@ -39,7 +38,7 @@ export default function Index() {
     );
   }
 
-  if (!hasCompletedOnboarding) {
+  if (FORCE_ONBOARDING || !hasCompletedOnboarding) {
     return <Redirect href="/(onboarding)" />;
   }
 
